@@ -104,7 +104,12 @@ ${question}
 
 Provide a clear, comprehensive, and helpful answer. Use examples where appropriate. Format your response in a readable way with proper paragraphs.`;
 
-  return executeWithFallback(prompt, false);
+  try {
+    return await executeWithFallback(prompt, false);
+  } catch (error) {
+    console.warn("ALL AI providers failed, using local fallback for chat...");
+    return "I'm sorry, but all my AI engines are currently unavailable or have exceeded their quotas. Please ensure your environment variables are set correctly or try again later.";
+  }
 };
 
 export const generateSummary = async (documentText) => {
@@ -130,7 +135,23 @@ Return your response as a valid JSON object (no markdown code fences, no extra t
 
 IMPORTANT: Return ONLY the JSON object. No markdown formatting, no code fences, no additional text before or after the JSON.`;
 
-  return executeWithFallback(prompt, true);
+  try {
+    return await executeWithFallback(prompt, true);
+  } catch (error) {
+    console.warn("ALL AI providers failed, using local fallback for summary...");
+    const sentences = documentText.split(/[.!?]+/).map(s => s.trim()).filter(s => s.length > 20);
+    const overview = sentences.slice(0, 3).join(". ") + (sentences.length > 0 ? "." : "");
+    const keyPoints = sentences.slice(3, 8).map(s => s + ".");
+    
+    return {
+      title: "Document Summary (Fallback Mode)",
+      overview: overview || "Overview not available.",
+      keyPoints: keyPoints.length > 0 ? keyPoints : ["Not enough text for key points."],
+      importantTopics: [{ topic: "Extracted Content", description: "Local extraction used because AI quotas were exceeded." }],
+      quickRevisionNotes: ["Please try again later when AI quotas reset."],
+      conclusion: "End of fallback summary."
+    };
+  }
 };
 
 export const explainTopic = async (topic, documentText) => {
@@ -153,7 +174,19 @@ Return your response as a valid JSON object (no markdown code fences, no extra t
 
 IMPORTANT: Return ONLY the JSON object. No markdown formatting, no code fences, no additional text before or after the JSON.`;
 
-  return executeWithFallback(prompt, true);
+  try {
+    return await executeWithFallback(prompt, true);
+  } catch (error) {
+    console.warn("ALL AI providers failed, using local fallback for explainTopic...");
+    return {
+      topic: topic,
+      beginner: "AI providers are currently unavailable due to quota limits. Please try again later.",
+      intermediate: "We cannot generate a detailed explanation at this time.",
+      advanced: "API limits exceeded. Please ensure your environment variables have the correct API keys.",
+      realWorldExample: "N/A",
+      interviewPerspective: "N/A"
+    };
+  }
 };
 
 export const generateFlashcards = async (documentText) => {
@@ -178,7 +211,29 @@ Generate between 10 and 20 flashcards. Distribute difficulty levels:
 
 IMPORTANT: Return ONLY the JSON array. No markdown formatting, no code fences, no additional text before or after the JSON.`;
 
-  return executeWithFallback(prompt, true);
+  try {
+    return await executeWithFallback(prompt, true);
+  } catch (error) {
+    console.warn("ALL AI providers failed, using local fallback for flashcards...");
+    const sentences = documentText.split(/[.!?]+/).map(s => s.trim()).filter(s => s.length > 40 && s.length < 150);
+    const fallbackFlashcards = [];
+    const count = Math.min(10, Math.max(5, Math.floor(sentences.length / 2)));
+    
+    for (let i = 0; i < count; i++) {
+      const sentence = sentences[i] || "Fallback content";
+      const words = sentence.split(' ').filter(w => w.length > 5);
+      const answerWord = words.length > 0 ? words[Math.floor(Math.random() * words.length)] : "concept";
+      const questionText = sentence.replace(new RegExp(`\\b${answerWord}\\b`, 'i'), '_______');
+      
+      fallbackFlashcards.push({
+        question: `Fill in the blank: "${questionText}"`,
+        answer: answerWord,
+        difficulty: "medium"
+      });
+    }
+    
+    return fallbackFlashcards.length > 0 ? fallbackFlashcards : [{ question: "AI Quota Exceeded", answer: "Please try again later", difficulty: "easy" }];
+  }
 };
 
 export const generateQuiz = async (documentText, count = 5) => {

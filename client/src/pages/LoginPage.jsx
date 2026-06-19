@@ -86,17 +86,24 @@ const LoginPage = () => {
               labelClassName="text-[11px] font-bold text-slate-500 tracking-wide uppercase mb-1"
             />
 
-            <Input
-              label="PASSWORD"
-              type="password"
-              name="password"
-              placeholder=""
-              icon={Lock}
-              value={formData.password}
-              onChange={handleChange}
-              error={errors.password}
-              labelClassName="text-[11px] font-bold text-slate-500 tracking-wide uppercase mb-1"
-            />
+            <div className="space-y-1">
+              <Input
+                label="PASSWORD"
+                type="password"
+                name="password"
+                placeholder=""
+                icon={Lock}
+                value={formData.password}
+                onChange={handleChange}
+                error={errors.password}
+                labelClassName="text-[11px] font-bold text-slate-500 tracking-wide uppercase mb-1"
+              />
+              <div className="flex justify-end">
+                <Link to="/forgot-password" className="text-xs font-bold text-primary hover:text-primary-dark transition-colors">
+                  Forgot Password?
+                </Link>
+              </div>
+            </div>
 
             <button
               type="submit"

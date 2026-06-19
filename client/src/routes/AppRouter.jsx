@@ -7,6 +7,7 @@ import DashboardLayout from '../layouts/DashboardLayout';
 
 const LoginPage = lazy(() => import('../pages/LoginPage'));
 const RegisterPage = lazy(() => import('../pages/RegisterPage'));
+const ForgotPasswordPage = lazy(() => import('../pages/ForgotPasswordPage'));
 const DashboardPage = lazy(() => import('../pages/DashboardPage'));
 const DocumentsPage = lazy(() => import('../pages/DocumentsPage'));
 const DocumentViewPage = lazy(() => import('../pages/DocumentViewPage'));
@@ -43,6 +44,7 @@ const AppRouter = () => {
         <Route path="/" element={<LoginPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
 
         {/* Protected routes with dashboard layout */}
         <Route
