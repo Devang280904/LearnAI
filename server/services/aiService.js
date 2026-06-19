@@ -1,7 +1,23 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import Groq from "groq-sdk";
+import OpenAI from "openai";
 
+// Initialize Gemini
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+const geminiModel = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+
+// Initialize Groq
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+
+// Initialize OpenRouter
+const openRouter = new OpenAI({
+  baseURL: "https://openrouter.ai/api/v1",
+  apiKey: process.env.OPENROUTER_API_KEY,
+  defaultHeaders: {
+    "HTTP-Referer": process.env.CLIENT_URL || "http://localhost:5173",
+    "X-Title": "LearnAI Summer Project",
+  }
+});
 
 const cleanJSONResponse = (text) => {
   let cleaned = text.trim();
@@ -26,6 +42,57 @@ const safeJSONParse = (text) => {
   }
 };
 
+/**
+ * Executes a prompt with a multi-provider fallback.
+ * 1. Gemini
+ * 2. Groq
+ * 3. OpenRouter
+ */
+const executeWithFallback = async (prompt, isJson = false) => {
+  // 1. Try Gemini
+  try {
+    console.log("[AI Orchestrator] Attempting Gemini...");
+    const result = await geminiModel.generateContent(
+      isJson 
+        ? { contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { responseMimeType: "application/json" } }
+        : prompt
+    );
+    const text = result.response.text();
+    return isJson ? JSON.parse(text) : text;
+  } catch (error) {
+    console.warn("[AI Orchestrator] Gemini failed:", error.message);
+  }
+
+  // 2. Try Groq
+  try {
+    console.log("[AI Orchestrator] Attempting Groq (llama-3.3-70b-versatile)...");
+    const completion = await groq.chat.completions.create({
+      messages: [{ role: "user", content: prompt }],
+      model: "llama-3.3-70b-versatile",
+      // We rely on safeJSONParse instead of strict json_object format because some 
+      // of our prompts request JSON arrays, which json_object mode rejects.
+    });
+    const text = completion.choices[0].message.content;
+    return isJson ? safeJSONParse(text) : text;
+  } catch (error) {
+    console.warn("[AI Orchestrator] Groq failed:", error.message);
+  }
+
+  // 3. Try OpenRouter
+  try {
+    console.log("[AI Orchestrator] Attempting OpenRouter (meta-llama/llama-3-8b-instruct:free)...");
+    const completion = await openRouter.chat.completions.create({
+      messages: [{ role: "user", content: prompt }],
+      model: "meta-llama/llama-3-8b-instruct:free",
+    });
+    const text = completion.choices[0].message.content;
+    return isJson ? safeJSONParse(text) : text;
+  } catch (error) {
+    console.error("[AI Orchestrator] All AI providers failed!", error.message);
+    throw new Error("All AI providers failed to generate content.");
+  }
+};
+
 export const chatWithDocument = async (documentText, question) => {
   const prompt = `You are an intelligent learning assistant. You have been provided with the content of a document. Answer the user's question based on the document content. If the question is not directly related to the document, you can still provide a helpful answer but mention that it may not be from the document.
 
@@ -37,9 +104,7 @@ ${question}
 
 Provide a clear, comprehensive, and helpful answer. Use examples where appropriate. Format your response in a readable way with proper paragraphs.`;
 
-  const result = await model.generateContent(prompt);
-  const response = result.response;
-  return response.text();
+  return executeWithFallback(prompt, false);
 };
 
 export const generateSummary = async (documentText) => {
@@ -65,9 +130,7 @@ Return your response as a valid JSON object (no markdown code fences, no extra t
 
 IMPORTANT: Return ONLY the JSON object. No markdown formatting, no code fences, no additional text before or after the JSON.`;
 
-  const result = await model.generateContent(prompt);
-  const response = result.response;
-  return safeJSONParse(response.text());
+  return executeWithFallback(prompt, true);
 };
 
 export const explainTopic = async (topic, documentText) => {
@@ -90,9 +153,7 @@ Return your response as a valid JSON object (no markdown code fences, no extra t
 
 IMPORTANT: Return ONLY the JSON object. No markdown formatting, no code fences, no additional text before or after the JSON.`;
 
-  const result = await model.generateContent(prompt);
-  const response = result.response;
-  return safeJSONParse(response.text());
+  return executeWithFallback(prompt, true);
 };
 
 export const generateFlashcards = async (documentText) => {
@@ -117,13 +178,11 @@ Generate between 10 and 20 flashcards. Distribute difficulty levels:
 
 IMPORTANT: Return ONLY the JSON array. No markdown formatting, no code fences, no additional text before or after the JSON.`;
 
-  const result = await model.generateContent(prompt);
-  const response = result.response;
-  return safeJSONParse(response.text());
+  return executeWithFallback(prompt, true);
 };
 
 export const generateQuiz = async (documentText, count = 5) => {
-  const validCounts = [5, 10, 20];
+  const validCounts = [5, 10, 15, 20];
   const questionCount = validCounts.includes(count) ? count : 5;
 
   const prompt = `You are an expert quiz creator. Generate a multiple-choice quiz from the following document content.
@@ -147,12 +206,48 @@ Guidelines:
 - The correctAnswer must exactly match one of the options
 - Vary difficulty across questions
 - Cover different sections/topics from the document
-
 IMPORTANT: Return ONLY the JSON array. No markdown formatting, no code fences, no additional text before or after the JSON.`;
 
-  const result = await model.generateContent(prompt);
-  const response = result.response;
-  return safeJSONParse(response.text());
+  try {
+    return await executeWithFallback(prompt, true);
+  } catch (error) {
+    // If absolutely ALL AI providers fail, we STILL use our local fallback so the user is never blocked!
+    console.warn("ALL AI providers failed, using local document extractor fallback...");
+    
+    const sentences = documentText
+      .split(/[.!?]+/)
+      .map(s => s.trim())
+      .filter(s => s.length > 40 && s.length < 150);
+      
+    if (sentences.length < questionCount) {
+      for (let i = 0; i < questionCount; i++) {
+        sentences.push(`This is a key concept discussed in the document section ${i + 1}`);
+      }
+    }
+
+    const fallbackQuiz = [];
+    for (let i = 0; i < questionCount; i++) {
+      const sentenceIndex = Math.floor((i / questionCount) * sentences.length);
+      const sentence = sentences[sentenceIndex] || sentences[0];
+      const words = sentence.split(' ').filter(w => w.length > 5);
+      const answerWord = words.length > 0 ? words[Math.floor(Math.random() * words.length)] : "concept";
+      const questionText = sentence.replace(new RegExp(`\\b${answerWord}\\b`, 'i'), '_______');
+      
+      fallbackQuiz.push({
+        question: `Fill in the blank from the text: "${questionText}"`,
+        options: [
+          answerWord,
+          "Alternative " + (i + 1),
+          "Analysis " + (i + 2),
+          "Methodology " + (i + 3)
+        ].sort(() => Math.random() - 0.5),
+        correctAnswer: answerWord,
+        explanation: `This is directly extracted from your document as a fallback because all AI quotas were exceeded.`
+      });
+    }
+    
+    return fallbackQuiz;
+  }
 };
 
 export default {

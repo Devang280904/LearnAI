@@ -1,3 +1,4 @@
+import cloudinary from "../config/cloudinary.js";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -24,14 +25,29 @@ export const uploadDocument = async (req, res, next) => {
     const { originalname, filename, size, path: filePath } = req.file;
 
     let extractedText = "";
+    let cloudinaryResult = null;
+    let signedUrl = "";
     try {
       extractedText = await extractTextFromPDF(filePath);
+
+      cloudinaryResult = await cloudinary.uploader.upload(filePath, {
+        folder: "learnai-pdfs",
+        resource_type: "raw",
+        type: "private" // Bypass public delivery restrictions
+      });
+      
+      // Generate a signed URL that authorizes the frontend to view the PDF
+      signedUrl = cloudinary.utils.private_download_url(
+        cloudinaryResult.public_id,
+        "pdf",
+        { resource_type: "raw" }
+      );
     } catch (extractError) {
-      // Clean up uploaded file if text extraction fails
-      fs.unlinkSync(filePath);
+      // Clean up uploaded file if text extraction or upload fails
+      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
       return res.status(422).json({
         success: false,
-        message: `Could not extract text from PDF: ${extractError.message}`,
+        message: `Could not process PDF: ${extractError.message}`,
       });
     }
 
@@ -41,10 +57,13 @@ export const uploadDocument = async (req, res, next) => {
       title,
       filename,
       filesize: size,
-      pdfUrl: `/uploads/${filename}`,
+      pdfUrl: signedUrl,
       extractedText,
       user: req.user._id,
     });
+    if (fs.existsSync(filePath)) {
+       fs.unlinkSync(filePath);
+    }
 
     res.status(201).json({
       success: true,

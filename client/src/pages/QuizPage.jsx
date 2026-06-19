@@ -167,13 +167,19 @@ const QuizPage = () => {
         {quiz?.title || 'Quiz'} - Quiz
       </h1>
 
-      {/* Subheader counts */}
+      {/* Subheader counts and Timer */}
       <div className="flex items-center justify-between text-sm font-semibold text-slate-500">
         <div>
           Question {currentQuestion + 1} of {questions.length}
         </div>
-        <div className="text-slate-400">
-          {totalAnswered} answered
+        <div className="flex items-center gap-4">
+          <div className={`flex items-center gap-1.5 px-3 py-1 rounded-lg border ${timeLeft <= 30 ? 'text-red-500 border-red-200 bg-red-50' : 'text-slate-600 border-slate-200 bg-slate-50'}`}>
+            <Clock className="w-4 h-4" />
+            {formatTime(timeLeft || 0)}
+          </div>
+          <div className="text-slate-400 hidden sm:block">
+            {totalAnswered} answered
+          </div>
         </div>
       </div>
 

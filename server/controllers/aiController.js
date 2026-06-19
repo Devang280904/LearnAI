@@ -8,7 +8,7 @@ import {
   explainTopic,
   generateFlashcards,
   generateQuiz,
-} from "../services/geminiService.js";
+} from "../services/aiService.js";
 
 // POST /api/ai/chat
 export const chat = async (req, res, next) => {

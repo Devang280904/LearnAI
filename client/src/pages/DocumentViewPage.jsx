@@ -223,7 +223,7 @@ const DocumentViewPage = () => {
     setShowQuizModal(false);
     setGenLoading(true);
     try {
-      await aiService.generateQuiz(id, quizQuestionsCount);
+      await aiService.generateQuiz(id, { count: quizQuestionsCount });
       toast.success('Quiz generated successfully!');
       fetchQuizzes();
     } catch (error) {
@@ -368,7 +368,7 @@ const DocumentViewPage = () => {
               <h2 className="font-bold text-slate-900 text-base">Document Viewer</h2>
               {document?.pdfUrl && (
                 <a
-                  href={`http://localhost:5000${document.pdfUrl}`}
+                  href={document.pdfUrl.startsWith('http') ? document.pdfUrl : `http://127.0.0.1:5000${document.pdfUrl}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-1.5 text-sm font-semibold text-primary hover:text-primary-dark transition-colors cursor-pointer"
@@ -381,7 +381,7 @@ const DocumentViewPage = () => {
             <div className="h-[600px] lg:h-[calc(100vh-280px)] bg-slate-100 flex items-center justify-center">
               {document?.pdfUrl ? (
                 <iframe
-                  src={`http://localhost:5000${document.pdfUrl}`}
+                  src={document.pdfUrl.startsWith('http') ? document.pdfUrl : `http://127.0.0.1:5000${document.pdfUrl}`}
                   className="w-full h-full border-0"
                   title="PDF Document Viewer"
                 />
@@ -907,14 +907,16 @@ const DocumentViewPage = () => {
         <div className="space-y-4">
           <div className="space-y-2">
             <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Number of Questions</label>
-            <input
-              type="number"
-              min="5"
-              max="20"
+            <select
               value={quizQuestionsCount}
-              onChange={(e) => setQuizQuestionsCount(parseInt(e.target.value) || 5)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm font-semibold"
-            />
+              onChange={(e) => setQuizQuestionsCount(parseInt(e.target.value))}
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm font-semibold appearance-none cursor-pointer"
+            >
+              <option value={5}>5 Questions</option>
+              <option value={10}>10 Questions</option>
+              <option value={15}>15 Questions</option>
+              <option value={20}>20 Questions</option>
+            </select>
           </div>
           <div className="flex justify-end gap-3 pt-4 border-t border-slate-200">
             <button
