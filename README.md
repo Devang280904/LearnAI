@@ -79,8 +79,6 @@ Make sure you have [Node.js](https://nodejs.org/) and [MongoDB](https://www.mong
 4. **Open the App:**
    Visit `http://localhost:5173` in your browser. Create an account, upload a PDF, and start learning!
 
-## 📸 Screenshots
-*(Feel free to add some screenshots of your beautiful UI here before you push!)*
 
 ## 🤝 Contributing
 Contributions, issues, and feature requests are welcome! Feel free to check the issues page.
