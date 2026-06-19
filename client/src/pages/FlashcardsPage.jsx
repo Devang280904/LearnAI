@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Layers, Heart, Trash2, ChevronLeft, ChevronRight,
@@ -130,6 +131,7 @@ const StudyCard = ({ card, onFavorite }) => {
 };
 
 const FlashcardsPage = () => {
+  const navigate = useNavigate();
   const [flashcards, setFlashcards] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -301,11 +303,11 @@ const FlashcardsPage = () => {
                   No Flashcard Sets Yet
                 </h3>
                 <p className="text-slate-500 text-sm max-w-sm mx-auto mb-6">
-                  {searchQuery ? 'No sets match your search terms.' : 'Create your first flashcard set by uploading a PDF and selecting the Flashcards tab.'}
+                  {searchQuery ? 'No sets match your search terms.' : 'Please generate flashcards first by opening a document and selecting the Flashcards tab.'}
                 </p>
                 {!searchQuery && (
-                  <Button onClick={() => window.location.href = '/documents'} className="bg-[#00B69B] hover:bg-[#009982] text-white">
-                    Go to Documents
+                  <Button onClick={() => navigate('/documents')} className="bg-[#00B69B] hover:bg-[#009982] text-white">
+                    Generate Flashcards
                   </Button>
                 )}
               </div>

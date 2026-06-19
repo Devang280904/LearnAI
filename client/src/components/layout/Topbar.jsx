@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Menu, Bell, User as UserIcon } from 'lucide-react';
+import { Menu, User as UserIcon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import useAuth from '../../hooks/useAuth';
 
@@ -26,11 +26,6 @@ const Topbar = ({ onMenuClick }) => {
 
         {/* Right side - Actions & Profile */}
         <div className="flex items-center gap-6">
-          {/* Notifications */}
-          <button className="relative p-2.5 rounded-xl text-slate-400 hover:text-slate-900 hover:bg-slate-50 transition-colors">
-            <Bell className="w-5 h-5" />
-          </button>
-
           {/* User profile block */}
           {user && (
             <div
