@@ -1,4 +1,5 @@
 import { Brain } from 'lucide-react';
+import Footer from './Footer';
 
 const AuthShell = ({ children, contentClassName = '' }) => {
   return (
@@ -18,6 +19,9 @@ const AuthShell = ({ children, contentClassName = '' }) => {
 
       <div className={`sm:mx-auto sm:w-full sm:max-w-md z-10 ${contentClassName}`}>
         {children}
+      </div>
+      <div className="mt-8 z-10 w-full flex justify-center">
+        <Footer />
       </div>
     </div>
   );

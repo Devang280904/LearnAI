@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import Sidebar from '../components/layout/Sidebar';
 import Topbar from '../components/layout/Topbar';
+import Footer from '../components/layout/Footer';
 
 const DashboardLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -25,6 +26,7 @@ const DashboardLayout = () => {
           <div className="mx-auto w-full max-w-7xl p-8">
             <Outlet />
           </div>
+          <Footer />
         </main>
       </div>
     </div>
